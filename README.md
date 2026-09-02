@@ -114,9 +114,20 @@ wrangler d1 execute shadab-shafin-db --remote --file=./schema.sql
 
 ## ধাপ ৫ — D1 ডাটাবেজ Pages প্রজেক্টে বাইন্ড করা
 
-1. আপনার Pages প্রজেক্টে যান → **Settings** → **Functions** → **D1 database bindings** → **Add binding**
-2. **Variable name:** ঠিক `DB` লিখুন (বড় হাতের অক্ষরে — কোডে এই নামেই খোঁজা হয়)
-3. **D1 database:** `shadab-shafin-db` সিলেক্ট করুন → **Save**
+এই প্রজেক্টে `wrangler.toml` ফাইল থাকায় Cloudflare বাইন্ডিং **wrangler.toml থেকেই** ম্যানেজ করে — তাই Dashboard-এর
+"Settings → Functions → D1 database bindings" ম্যানুয়াল অপশনটা বন্ধ/নিষ্ক্রিয় দেখাতে পারে ("Bindings for this
+project are being managed through wrangler.toml")। এটা স্বাভাবিক — বাইন্ডিং করতে হবে সরাসরি `wrangler.toml` ফাইল
+এডিট করেই:
+
+1. D1 ডাটাবেজ পেজে গিয়ে **Overview** ট্যাব থেকে আপনার ডাটাবেজের **Database ID** (একটা UUID, যেমন `954b3cb8-6f57-...`) কপি করুন
+2. `wrangler.toml` ফাইলে এটা যোগ করুন:
+   ```toml
+   [[d1_databases]]
+   binding = "DB"
+   database_name = "shadab-shafin-fashion-house"
+   database_id = "আপনার-আসল-database-id"
+   ```
+3. ফাইলটা GitHub-এ কমিট/পুশ করুন — পুশ হওয়ার সাথে সাথে নতুন ডিপ্লয় ট্রিগার হয়ে বাইন্ডিং কার্যকর হয়ে যাবে
 
 ---
 
@@ -167,7 +178,8 @@ Pages প্রজেক্টে **Custom domains** ট্যাব থেক�
 | অ্যাডমিন লগইনে "সার্ভারে সংযোগ করা যায়নি" | `ADMIN_PASSCODE` এনভায়রনমেন্ট ভ্যারিয়েবল সেট করা নেই, অথবা D1 বাইন্ডিং নেই |
 | অ্যাডমিন লগইনে "ভুল পাসকোড" | ধাপ ৬-এ দেওয়া মানটাই সঠিকভাবে টাইপ করুন (কেস-সেনসিটিভ) |
 | প্রোডাক্ট সেভ/ডিলিট করতে গেলে "সেশনের মেয়াদ শেষ" | সেশন ১২ ঘণ্টা পর এমনিতেই এক্সপায়ার হয় — আবার পাসকোড দিয়ে লগ-ইন করুন |
-| ডিপ্লয় "Invalid database UUID" এরর দিয়ে ব্যর্থ হয় | `wrangler.toml`-এ `[[d1_databases]]` ব্লকে placeholder `database_id` রয়ে গেছে — এই ব্লকটা কমেন্ট করে রাখুন, D1 বাইন্ডিং Dashboard থেকে করুন (ধাপ ৫) |
+| ডিপ্লয় "Invalid database UUID" এরর দিয়ে ব্যর্থ হয় | `wrangler.toml`-এর `database_id`-এ placeholder/ভুল UUID আছে — D1 ডাটাবেজের Overview ট্যাব থেকে আসল UUID কপি করে বসান (ধাপ ৫) |
+| Dashboard-এ "D1 database bindings" যোগ করতে গেলে "Bindings for this project are being managed through wrangler.toml" দেখায় | স্বাভাবিক — এই প্রজেক্টে বাইন্ডিং `wrangler.toml` থেকেই ম্যানেজ হয়, Dashboard থেকে না। ধাপ ৫ অনুসরণ করে সরাসরি ফাইলে বাইন্ডিং যোগ করুন |
 | ব্রাউজার কনসোলে API 500 এরর, `D1 ডাটাবেজ বাইন্ড করা নেই` মেসেজ | Settings → Functions-এ গিয়ে variable name ঠিক `DB` কিনা চেক করুন |
 
 ---
