@@ -1,0 +1,4 @@
+# /order লিংকে গেলে order.html দেখানো হবে (URL একই থাকবে, rewrite — redirect না)
+/order         /order.html   200
+/order/        /order.html   200
+/track         /order.html   200

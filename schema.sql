@@ -43,6 +43,49 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('deliveryInsideDhaka', '80'),
   ('deliveryOutsideDhaka', '150');
 
+-- গ্রাহক অ্যাকাউন্ট (অর্ডার হিস্টরি/ট্র্যাকিং-এর জন্য লগ-ইন সিস্টেম)
+CREATE TABLE IF NOT EXISTS customers (
+  id              TEXT PRIMARY KEY,
+  phone           TEXT UNIQUE NOT NULL,   -- normalized: দেশ কোড ও শুরুর 0 ছাড়া (যেমন 1715981918)
+  name            TEXT NOT NULL,
+  email           TEXT DEFAULT '',
+  password_hash   TEXT NOT NULL,
+  password_salt   TEXT NOT NULL,
+  created_at      INTEGER NOT NULL
+);
+
+-- গ্রাহক লগ-ইন সেশন টোকেন
+CREATE TABLE IF NOT EXISTS customer_sessions (
+  token       TEXT PRIMARY KEY,
+  customer_id TEXT NOT NULL,
+  created_at  INTEGER NOT NULL,
+  expires_at  INTEGER NOT NULL
+);
+
+-- গ্রাহকের অর্ডার (চেকআউট করলেই একটি সারি তৈরি হয়, ইউনিক ট্র্যাকিং আইডিসহ)
+CREATE TABLE IF NOT EXISTS orders (
+  id              TEXT PRIMARY KEY,       -- ট্র্যাকিং আইডি, যেমন SSFH-48213
+  customer_id     TEXT,                   -- লগ-ইন করা অবস্থায় অর্ডার করলে customers.id, নাহলে NULL (গেস্ট অর্ডার)
+  customer_phone  TEXT NOT NULL,          -- normalized ফোন — লগ-ইন/ট্র্যাকিং ম্যাচিং-এর জন্য
+  name            TEXT NOT NULL,
+  phone_display   TEXT NOT NULL,          -- গ্রাহক যেভাবে টাইপ করেছেন সেভাবে দেখানোর জন্য
+  email           TEXT DEFAULT '',
+  district        TEXT DEFAULT '',
+  area            TEXT DEFAULT '',
+  address         TEXT NOT NULL,
+  note            TEXT DEFAULT '',
+  payment_method  TEXT DEFAULT 'cod',
+  items           TEXT NOT NULL,          -- JSON array: [{name,color,size,qty,price}]
+  subtotal        INTEGER NOT NULL,
+  delivery        INTEGER NOT NULL DEFAULT 0,
+  total           INTEGER NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending', -- pending | confirmed | processing | shipped | delivered | cancelled
+  created_at      INTEGER NOT NULL,
+  updated_at      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone);
+CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
+
 -- ডিফল্ট ৬টি নমুনা পণ্য (চাইলে অ্যাডমিন প্যানেল থেকে এডিট/ডিলিট করুন)
 INSERT OR IGNORE INTO products (id, name, category, subcategory, price, sale, colors, sizes, images, description, description_en, fabric, care, sort_order, created_at, updated_at) VALUES ('p1', 'Draped Silk Saree', 'Women', 'Saree', 6200, 4650, '[{"name": "Ink Black", "hex": "#14110F"}, {"name": "Champagne Gold", "hex": "#C9A24B"}]', '[{"size": "Free Size", "stock": 12}]', '["https://picsum.photos/seed/aora-p1-a/700/900", "https://picsum.photos/seed/aora-p1-b/700/900"]', 'একটি হাতে-তৈরি সিল্ক শাড়ি, নরম শ্যাম্পেইন-গোল্ড পাড় সহ।', 'A handcrafted silk saree with a soft champagne-gold border.', 'Pure Silk', 'Dry Clean Only', 0, 1735689600000, 1735689600000);
 INSERT OR IGNORE INTO products (id, name, category, subcategory, price, sale, colors, sizes, images, description, description_en, fabric, care, sort_order, created_at, updated_at) VALUES ('p2', 'Structured Linen Panjabi', 'Men', 'Panjabi', 3400, NULL, '[{"name": "Ivory", "hex": "#F7F3EC"}, {"name": "Charcoal", "hex": "#2B2723"}]', '[{"size": "M", "stock": 8}, {"size": "L", "stock": 10}, {"size": "XL", "stock": 4}]', '["https://picsum.photos/seed/aora-p2-a/700/900", "https://picsum.photos/seed/aora-p2-b/700/900"]', 'প্রিমিয়াম লিনেন কাপড়ে তৈরি পাঞ্জাবি, আরামদায়ক ফিট।', 'A panjabi made from premium linen fabric with a comfortable fit.', 'Linen', 'Machine Wash Cold', 1, 1735689600000, 1735689600000);

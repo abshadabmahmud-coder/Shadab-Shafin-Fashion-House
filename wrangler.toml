@@ -8,5 +8,5 @@ compatibility_date = "2026-01-01"
 # তখন <YOUR_DATABASE_ID> জায়গায় `wrangler d1 create` কমান্ড থেকে পাওয়া আসল ID বসান।
 [[d1_databases]]
 binding = "DB"
-database_name = "shadab-shafin-fashion-house"
-database_id = "954b3cb8-6f57-4fd3-9f30-513e99f367ee"
+database_name = "shadab-shafin-db"
+database_id = "<YOUR_DATABASE_ID>"

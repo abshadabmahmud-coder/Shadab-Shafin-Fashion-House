@@ -211,6 +211,7 @@ footer{background:#0F0D0B;color:#EFE6D8;}
     </nav>
     <div class="header-icons">
       <button class="lang-toggle" id="langToggleBtn" onclick="toggleLang()">EN</button>
+      <a class="icon-btn" data-i18n-title="nav_account" title="আমার অর্ডার" href="order.html">👤</a>
       <a class="icon-btn" onclick="navigate('cart')">🛍️<span class="cart-badge">0</span></a>
     </div>
   </div>
@@ -232,6 +233,7 @@ footer{background:#0F0D0B;color:#EFE6D8;}
     <a data-i18n="nav_kids" onclick="navigate('shop','Kids')">শিশু</a>
     <a data-i18n="nav_all" onclick="navigate('shop','All')">সকল পণ্য</a>
     <a data-i18n="nav_bag" onclick="navigate('cart')">ব্যাগ</a>
+    <a data-i18n="nav_account" href="order.html">আমার অর্ডার</a>
   </div>
 </div>
 
@@ -282,7 +284,7 @@ let LANG = "bn";
 try { LANG = localStorage.getItem("aora_lang") || "bn"; } catch(e){}
 const I18N = {
   bn: {
-    nav_women:"নারী", nav_men:"পুরুষ", nav_kids:"শিশু", nav_all:"সকল পণ্য", nav_bag:"ব্যাগ",
+    nav_women:"নারী", nav_men:"পুরুষ", nav_kids:"শিশু", nav_all:"সকল পণ্য", nav_bag:"ব্যাগ", nav_account:"আমার অর্ডার",
     hero_shop_women:"নারী কালেকশন", hero_shop_men:"পুরুষ কালেকশন",
     hero_brand_heading:"অভিজাত্য", hero_brand_subheading:"ফুটে উঠুক প্রতিটি মুহূর্তে",
     hero_style_pillars:"স্টাইল | গুণগত মান | আস্থা", hero_shop_now:"এখনই কিনুন",
@@ -304,7 +306,7 @@ const I18N = {
     flip_hint:"টাচ করে ঘুরান", save:"সাশ্রয়"
   },
   en: {
-    nav_women:"Women", nav_men:"Men", nav_kids:"Kids", nav_all:"All Products", nav_bag:"Bag",
+    nav_women:"Women", nav_men:"Men", nav_kids:"Kids", nav_all:"All Products", nav_bag:"Bag", nav_account:"My Orders",
     hero_shop_women:"Women's Collection", hero_shop_men:"Men's Collection",
     hero_brand_heading:"Elegance", hero_brand_subheading:"In Every Moment",
     hero_style_pillars:"STYLE | QUALITY | TRUST", hero_shop_now:"SHOP NOW",
@@ -439,6 +441,10 @@ async function loadLiveData(){
 
 function fmt(n){ return STORE.currency + n.toLocaleString("en-IN"); }
 function pDesc(p){ return LANG === "en" ? (p.description_en || p.description) : p.description; }
+
+/* ---------- CUSTOMER ACCOUNT (লগ-ইন থাকলে চেকআউটে ব্যবহার হয়, order.html-এ পরিচালিত হয়) ---------- */
+function getSsfhCustomer(){ try{ return JSON.parse(localStorage.getItem("ssfh_customer")) || null; }catch(e){ return null; } }
+function getSsfhToken(){ return localStorage.getItem("ssfh_customer_token"); }
 
 /* ---------- CART (localStorage) ---------- */
 const CART_KEY = "aora_cart";
@@ -722,10 +728,11 @@ function renderCheckout(cart){
       <div style="display:grid;grid-template-columns:1fr;gap:40px;">
         <div>
           <div class="form-grid two-col">
-            <input class="form-input" id="cName" placeholder="আপনার পুরো নাম" required>
+            <input class="form-input" id="cName" placeholder="আপনার পুরো নাম" value="${getSsfhCustomer()?.name || ""}" required>
             <input class="form-input" id="cPhone" placeholder="মোবাইল নাম্বার" required>
           </div>
           <div style="margin-top:14px;"><input class="form-input" id="cEmail" placeholder="ইমেইল (ঐচ্ছিক)"></div>
+          ${getSsfhCustomer() ? `<p style="font-size:11.5px;color:var(--muted);margin-top:8px;">লগ-ইন করা আছে: ${getSsfhCustomer().name} — অর্ডারটি স্বয়ংক্রিয়ভাবে আপনার <a href="order.html" style="text-decoration:underline;color:var(--maroon-deep);">অ্যাকাউন্টে</a> যুক্ত হবে।</p>` : `<p style="font-size:11.5px;color:var(--muted);margin-top:8px;">ইতিমধ্যে অ্যাকাউন্ট আছে? <a href="order.html" style="text-decoration:underline;color:var(--maroon-deep);">লগ-ইন করুন</a> — তাহলে অর্ডার হিস্টরিতে সহজেই খুঁজে পাবেন।</p>`}
           <div class="form-grid two-col" style="margin-top:14px;">
             <select class="form-input" id="cDistrict">
               <option>Dhaka</option><option>Chattogram</option><option>Sylhet</option><option>Khulna</option>
@@ -754,7 +761,7 @@ function setPay(el){ document.querySelectorAll(".pay-option").forEach(o=>o.class
 
 function encodeFormData(data){ return Object.keys(data).map(k=>encodeURIComponent(k)+"="+encodeURIComponent(data[k])).join("&"); }
 
-function placeOrder(){
+async function placeOrder(){
   const name = document.getElementById("cName").value.trim();
   const phone = document.getElementById("cPhone").value.trim();
   const address = document.getElementById("cAddress").value.trim();
@@ -768,7 +775,26 @@ function placeOrder(){
   const subtotal = cartSubtotal();
   const delivery = districtDelivery();
   const total = subtotal + delivery;
-  const orderId = "SSFH-" + Math.floor(10000+Math.random()*89999);
+
+  const placeBtn = document.querySelector('button[onclick="placeOrder()"]');
+  if(placeBtn){ placeBtn.disabled = true; placeBtn.textContent = "অর্ডার হচ্ছে..."; }
+
+  // ট্র্যাকিং আইডি সার্ভারে (D1) সেভ করা হয় যাতে "আমার অর্ডার" পেজ থেকে পরে ট্র্যাক/দেখা যায়
+  const orderItems = cart.map(l=>({ name:l.name, color:l.color, size:l.size, qty:l.qty, price: l.sale ?? l.price }));
+  let orderId = "SSFH-" + Math.floor(10000+Math.random()*89999); // নেটওয়ার্ক/D1 সমস্যা হলে ফলব্যাক আইডি
+  try{
+    const headers = { "Content-Type":"application/json" };
+    const token = getSsfhToken();
+    if(token) headers["Authorization"] = "Bearer " + token;
+    const res = await fetch("/api/orders", {
+      method:"POST", headers,
+      body: JSON.stringify({ name, phone, email, district, area, address, note, payment, items: orderItems, subtotal, delivery, total })
+    });
+    if(res.ok){ const data = await res.json(); if(data.orderId) orderId = data.orderId; }
+  }catch(e){
+    console.warn("অর্ডার D1-এ সেভ করা যায়নি, শুধু WhatsApp-এর মাধ্যমে পাঠানো হচ্ছে:", e);
+  }
+
   const itemLines = cart.map(l=>`• ${l.name} (${l.color}, ${l.size}) x${l.qty} — ${fmt((l.sale??l.price)*l.qty)}`).join("\n");
   const summary = `${itemLines}\n\nSubtotal: ${fmt(subtotal)}\nDelivery: ${delivery===0?"Free":fmt(delivery)}\nTotal: ${fmt(total)}`;
   const waText = `নতুন অর্ডার — ${orderId}\n\nনাম: ${name}\nমোবাইল: ${phone}\nঠিকানা: ${address}, ${area}, ${district}\n${note?`নোট: ${note}\n`:""}পেমেন্ট: ${payment.toUpperCase()}\n\n${summary}`;
@@ -783,8 +809,11 @@ function placeOrder(){
     <div class="container" style="text-align:center;padding:60px 20px;max-width:420px;margin:0 auto;">
       <p style="font-size:40px;">✓</p>
       <h1 class="serif" style="font-size:30px;margin:10px 0;">অর্ডার সম্পন্ন হচ্ছে…</h1>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">এখনই WhatsApp খুলে যাবে, সেখানে "Send" চাপলেই আপনার অর্ডার আমাদের কাছে পৌঁছে যাবে।</p>
-      <a href="${waLink}" target="_blank" class="btn btn-primary">WhatsApp-এ অর্ডার পাঠান</a>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:6px;">আপনার অর্ডার আইডি</p>
+      <p class="serif" style="font-size:22px;color:var(--maroon-deep);margin-bottom:20px;">${orderId}</p>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">এখনই WhatsApp খুলে যাবে, সেখানে "Send" চাপলেই আপনার অর্ডার আমাদের কাছে পৌঁছে যাবে। উপরের আইডি দিয়ে পরে অর্ডার ট্র্যাক করতে পারবেন।</p>
+      <a href="${waLink}" target="_blank" class="btn btn-primary" style="margin-bottom:12px;">WhatsApp-এ অর্ডার পাঠান</a>
+      <a href="order.html?id=${encodeURIComponent(orderId)}" class="btn btn-outline">অর্ডার ট্র্যাক করুন</a>
     </div>`;
   window.open(waLink, "_blank");
 }

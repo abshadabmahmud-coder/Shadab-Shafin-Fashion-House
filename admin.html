@@ -109,6 +109,18 @@ textarea#codeOutput{width:100%;height:220px;font-family:monospace;font-size:12px
         <tbody id="prodTableBody"></tbody>
       </table>
     </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:36px 0 16px;flex-wrap:wrap;gap:10px;">
+      <h1 class="serif" style="font-size:26px;">অর্ডার তালিকা (<span id="orderCount">0</span>)</h1>
+      <button class="btn btn-outline" onclick="loadOrders()">রিফ্রেশ করুন</button>
+    </div>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">স্ট্যাটাস বদলালেই গ্রাহক তার "আমার অর্ডার" পেজে (order.html) সাথে সাথে নতুন স্ট্যাটাস দেখতে পাবেন।</p>
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table>
+        <thead><tr><th>অর্ডার আইডি</th><th>তারিখ</th><th>গ্রাহক</th><th>পণ্য</th><th>মোট</th><th>স্ট্যাটাস</th></tr></thead>
+        <tbody id="orderTableBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -368,19 +380,7 @@ async function checkGate(){
       body: JSON.stringify({ passcode: val })
     });
     if(!res.ok){
-      let serverMsg = "";
-      try {
-        const errData = await res.json();
-        serverMsg = errData && errData.error ? errData.error : "";
-      } catch(e) {}
-
-      if(res.status === 401){
-        msgEl.textContent = "ভুল পাসকোড।";
-      } else if(serverMsg){
-        msgEl.textContent = "সেটআপ সমস্যা: " + serverMsg;
-      } else {
-        msgEl.textContent = "লগইন ব্যর্থ (স্ট্যাটাস " + res.status + ")। README-এর সেটআপ ধাপগুলো চেক করুন।";
-      }
+      msgEl.textContent = "ভুল পাসকোড।";
       return;
     }
     const data = await res.json();
@@ -390,6 +390,7 @@ async function checkGate(){
     document.getElementById("adminApp").style.display = "block";
     await loadProducts();
     await loadStoreSettings();
+    await loadOrders();
   } catch(e) {
     msgEl.textContent = "সার্ভারে সংযোগ করা যায়নি। D1/Functions ঠিকমতো সেটআপ হয়েছে কিনা README অনুযায়ী চেক করুন।";
   }
@@ -511,6 +512,62 @@ function showToast(msg){
   const t = document.getElementById("toast");
   t.textContent = msg; t.classList.add("show");
   clearTimeout(window._tt); window._tt = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+
+/* ---------- ORDERS (D1) ---------- */
+const ORDER_STATUS_LABEL = {
+  pending:"অপেক্ষমান", confirmed:"নিশ্চিত হয়েছে", processing:"প্রস্তুত করা হচ্ছে",
+  shipped:"পাঠানো হয়েছে", delivered:"ডেলিভারি সম্পন্ন", cancelled:"বাতিল হয়েছে"
+};
+const ORDER_STATUSES = Object.keys(ORDER_STATUS_LABEL);
+let ORDERS = [];
+
+async function loadOrders(){
+  try {
+    const res = await apiFetch("/api/admin/orders");
+    ORDERS = res.ok ? await res.json() : [];
+  } catch(e) {
+    ORDERS = [];
+    console.warn("অর্ডার লোড করা যায়নি:", e);
+  }
+  renderOrdersTable();
+}
+
+function orderDate(ms){
+  try { return new Date(ms).toLocaleDateString("bn-BD", { day:"numeric", month:"short", year:"numeric" }); }
+  catch(e){ return new Date(ms).toLocaleDateString(); }
+}
+
+function renderOrdersTable(){
+  document.getElementById("orderCount").textContent = ORDERS.length;
+  document.getElementById("orderTableBody").innerHTML = ORDERS.map(o=>{
+    const itemsSummary = (o.items||[]).map(it=>`${it.name} x${it.qty}`).join(", ");
+    const statusOptions = ORDER_STATUSES.map(s=>
+      `<option value="${s}" ${s===o.status?"selected":""}>${ORDER_STATUS_LABEL[s]}</option>`
+    ).join("");
+    return `<tr>
+      <td><span class="serif">${o.id}</span></td>
+      <td style="white-space:nowrap;font-size:12px;">${orderDate(o.created_at)}</td>
+      <td>${o.name}<br><span style="font-size:11px;color:var(--muted);">${o.phone}</span></td>
+      <td style="max-width:220px;font-size:12px;color:var(--muted);">${itemsSummary}</td>
+      <td style="white-space:nowrap;">${fmt(o.total)}</td>
+      <td><select class="form-input" style="margin-bottom:0;padding:6px 8px;" onchange="updateOrderStatus('${o.id}', this.value)">${statusOptions}</select></td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">এখনো কোনো অর্ডার নেই।</td></tr>`;
+}
+
+async function updateOrderStatus(id, status){
+  try {
+    const res = await apiFetch("/api/admin/orders/" + encodeURIComponent(id), {
+      method:"PATCH", body: JSON.stringify({ status })
+    });
+    if(!res.ok) throw new Error("update failed");
+    const o = ORDERS.find(x=>x.id===id); if(o) o.status = status;
+    showToast("অর্ডার স্ট্যাটাস আপডেট হয়েছে");
+  } catch(e) {
+    alert("স্ট্যাটাস আপডেট করা যায়নি। আবার চেষ্টা করুন।");
+    loadOrders();
+  }
 }
 </script>
 </body>
