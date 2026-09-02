@@ -6,10 +6,8 @@ export async function onRequestGet({ request, env }) {
   const phone = await requireCustomerAuth(request, env);
   if (!phone) return jsonResponse({ error: "unauthorized" }, 401);
 
-  const { results } = await env.DB.prepare(
-    "SELECT order_id, items, subtotal, delivery, total, status, payment, created_at FROM orders WHERE phone = ? ORDER BY created_at DESC"
-  ).bind(phone).all();
+  const customer = await env.DB.prepare("SELECT phone, name FROM customers WHERE phone = ?").bind(phone).first();
+  if (!customer) return jsonResponse({ error: "not_found" }, 404);
 
-  const orders = (results || []).map((o) => ({ ...o, items: JSON.parse(o.items || "[]") }));
-  return jsonResponse(orders);
+  return jsonResponse(customer);
 }

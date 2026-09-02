@@ -208,10 +208,10 @@ footer{background:#0F0D0B;color:#EFE6D8;}
       <a data-i18n="nav_men" onclick="navigate('shop','Men')">পুরুষ</a>
       <a data-i18n="nav_kids" onclick="navigate('shop','Kids')">শিশু</a>
       <a data-i18n="nav_all" onclick="navigate('shop','All')">সকল পণ্য</a>
+      <a href="/order">আমার অর্ডার</a>
     </nav>
     <div class="header-icons">
       <button class="lang-toggle" id="langToggleBtn" onclick="toggleLang()">EN</button>
-      <a class="icon-btn" data-i18n-title="nav_account" title="আমার অর্ডার" href="order.html">👤</a>
       <a class="icon-btn" onclick="navigate('cart')">🛍️<span class="cart-badge">0</span></a>
     </div>
   </div>
@@ -233,19 +233,9 @@ footer{background:#0F0D0B;color:#EFE6D8;}
     <a data-i18n="nav_kids" onclick="navigate('shop','Kids')">শিশু</a>
     <a data-i18n="nav_all" onclick="navigate('shop','All')">সকল পণ্য</a>
     <a data-i18n="nav_bag" onclick="navigate('cart')">ব্যাগ</a>
-    <a data-i18n="nav_account" href="order.html">আমার অর্ডার</a>
+    <a href="/order">আমার অর্ডার</a>
   </div>
 </div>
-
-<!-- Netlify order-record form (detected automatically at deploy) -->
-<form name="order" data-netlify="true" netlify-honeypot="bot-field" hidden>
-  <input type="hidden" name="form-name" value="order">
-  <p hidden><label>Don't fill this out: <input name="bot-field"></label></p>
-  <input type="text" name="customerName"><input type="text" name="phone"><input type="text" name="email">
-  <input type="text" name="district"><input type="text" name="area"><input type="text" name="address">
-  <input type="text" name="note"><input type="text" name="payment"><textarea name="orderSummary"></textarea>
-  <input type="text" name="total">
-</form>
 
 <main id="app"></main>
 
@@ -258,7 +248,7 @@ footer{background:#0F0D0B;color:#EFE6D8;}
       <p data-i18n="footer_tagline" style="font-size:12px;color:#8B7F72;">নারী, পুরুষ ও শিশুদের জন্য আভিজাত্যপূর্ণ ফ্যাশন।</p>
     </div>
     <div><h4 data-i18n="footer_service">গ্রাহক সেবা</h4><ul><li data-i18n="footer_contact_us">যোগাযোগ করুন</li><li data-i18n="footer_delivery_info">ডেলিভারি তথ্য</li><li data-i18n="footer_returns">রিটার্ন ও এক্সচেঞ্জ</li></ul></div>
-    <div><h4 data-i18n="footer_shop">শপ</h4><ul><li><a data-i18n="nav_women" onclick="navigate('shop','Women')">নারী</a></li><li><a data-i18n="nav_men" onclick="navigate('shop','Men')">পুরুষ</a></li><li><a data-i18n="nav_kids" onclick="navigate('shop','Kids')">শিশু</a></li></ul></div>
+    <div><h4 data-i18n="footer_shop">শপ</h4><ul><li><a data-i18n="nav_women" onclick="navigate('shop','Women')">নারী</a></li><li><a data-i18n="nav_men" onclick="navigate('shop','Men')">পুরুষ</a></li><li><a data-i18n="nav_kids" onclick="navigate('shop','Kids')">শিশু</a></li><li><a href="/order">আমার অর্ডার</a></li></ul></div>
     <div><h4 data-i18n="footer_contact">যোগাযোগ</h4><ul>
       <li><a id="footerPhone" href="#" target="_blank">+880 1715-981918</a></li>
       <li><a id="footerTelegram" href="#" target="_blank">Telegram: +880 1715-981918</a></li>
@@ -284,7 +274,7 @@ let LANG = "bn";
 try { LANG = localStorage.getItem("aora_lang") || "bn"; } catch(e){}
 const I18N = {
   bn: {
-    nav_women:"নারী", nav_men:"পুরুষ", nav_kids:"শিশু", nav_all:"সকল পণ্য", nav_bag:"ব্যাগ", nav_account:"আমার অর্ডার",
+    nav_women:"নারী", nav_men:"পুরুষ", nav_kids:"শিশু", nav_all:"সকল পণ্য", nav_bag:"ব্যাগ",
     hero_shop_women:"নারী কালেকশন", hero_shop_men:"পুরুষ কালেকশন",
     hero_brand_heading:"অভিজাত্য", hero_brand_subheading:"ফুটে উঠুক প্রতিটি মুহূর্তে",
     hero_style_pillars:"স্টাইল | গুণগত মান | আস্থা", hero_shop_now:"এখনই কিনুন",
@@ -306,7 +296,7 @@ const I18N = {
     flip_hint:"টাচ করে ঘুরান", save:"সাশ্রয়"
   },
   en: {
-    nav_women:"Women", nav_men:"Men", nav_kids:"Kids", nav_all:"All Products", nav_bag:"Bag", nav_account:"My Orders",
+    nav_women:"Women", nav_men:"Men", nav_kids:"Kids", nav_all:"All Products", nav_bag:"Bag",
     hero_shop_women:"Women's Collection", hero_shop_men:"Men's Collection",
     hero_brand_heading:"Elegance", hero_brand_subheading:"In Every Moment",
     hero_style_pillars:"STYLE | QUALITY | TRUST", hero_shop_now:"SHOP NOW",
@@ -441,10 +431,6 @@ async function loadLiveData(){
 
 function fmt(n){ return STORE.currency + n.toLocaleString("en-IN"); }
 function pDesc(p){ return LANG === "en" ? (p.description_en || p.description) : p.description; }
-
-/* ---------- CUSTOMER ACCOUNT (লগ-ইন থাকলে চেকআউটে ব্যবহার হয়, order.html-এ পরিচালিত হয়) ---------- */
-function getSsfhCustomer(){ try{ return JSON.parse(localStorage.getItem("ssfh_customer")) || null; }catch(e){ return null; } }
-function getSsfhToken(){ return localStorage.getItem("ssfh_customer_token"); }
 
 /* ---------- CART (localStorage) ---------- */
 const CART_KEY = "aora_cart";
@@ -728,11 +714,10 @@ function renderCheckout(cart){
       <div style="display:grid;grid-template-columns:1fr;gap:40px;">
         <div>
           <div class="form-grid two-col">
-            <input class="form-input" id="cName" placeholder="আপনার পুরো নাম" value="${getSsfhCustomer()?.name || ""}" required>
+            <input class="form-input" id="cName" placeholder="আপনার পুরো নাম" required>
             <input class="form-input" id="cPhone" placeholder="মোবাইল নাম্বার" required>
           </div>
           <div style="margin-top:14px;"><input class="form-input" id="cEmail" placeholder="ইমেইল (ঐচ্ছিক)"></div>
-          ${getSsfhCustomer() ? `<p style="font-size:11.5px;color:var(--muted);margin-top:8px;">লগ-ইন করা আছে: ${getSsfhCustomer().name} — অর্ডারটি স্বয়ংক্রিয়ভাবে আপনার <a href="order.html" style="text-decoration:underline;color:var(--maroon-deep);">অ্যাকাউন্টে</a> যুক্ত হবে।</p>` : `<p style="font-size:11.5px;color:var(--muted);margin-top:8px;">ইতিমধ্যে অ্যাকাউন্ট আছে? <a href="order.html" style="text-decoration:underline;color:var(--maroon-deep);">লগ-ইন করুন</a> — তাহলে অর্ডার হিস্টরিতে সহজেই খুঁজে পাবেন।</p>`}
           <div class="form-grid two-col" style="margin-top:14px;">
             <select class="form-input" id="cDistrict">
               <option>Dhaka</option><option>Chattogram</option><option>Sylhet</option><option>Khulna</option>
@@ -759,8 +744,6 @@ function renderCheckout(cart){
 }
 function setPay(el){ document.querySelectorAll(".pay-option").forEach(o=>o.classList.remove("active")); el.classList.add("active"); el.querySelector("input").checked=true; }
 
-function encodeFormData(data){ return Object.keys(data).map(k=>encodeURIComponent(k)+"="+encodeURIComponent(data[k])).join("&"); }
-
 async function placeOrder(){
   const name = document.getElementById("cName").value.trim();
   const phone = document.getElementById("cPhone").value.trim();
@@ -776,46 +759,42 @@ async function placeOrder(){
   const delivery = districtDelivery();
   const total = subtotal + delivery;
 
-  const placeBtn = document.querySelector('button[onclick="placeOrder()"]');
-  if(placeBtn){ placeBtn.disabled = true; placeBtn.textContent = "অর্ডার হচ্ছে..."; }
+  const btn = document.querySelector('.summary-box .btn-primary');
+  if(btn){ btn.disabled = true; btn.textContent = "অপেক্ষা করুন…"; }
 
-  // ট্র্যাকিং আইডি সার্ভারে (D1) সেভ করা হয় যাতে "আমার অর্ডার" পেজ থেকে পরে ট্র্যাক/দেখা যায়
-  const orderItems = cart.map(l=>({ name:l.name, color:l.color, size:l.size, qty:l.qty, price: l.sale ?? l.price }));
-  let orderId = "SSFH-" + Math.floor(10000+Math.random()*89999); // নেটওয়ার্ক/D1 সমস্যা হলে ফলব্যাক আইডি
+  const items = cart.map(l=>({ name:l.name, color:l.color, size:l.size, qty:l.qty, price:(l.sale??l.price) }));
+
+  let data;
   try{
-    const headers = { "Content-Type":"application/json" };
-    const token = getSsfhToken();
-    if(token) headers["Authorization"] = "Bearer " + token;
     const res = await fetch("/api/orders", {
-      method:"POST", headers,
-      body: JSON.stringify({ name, phone, email, district, area, address, note, payment, items: orderItems, subtotal, delivery, total })
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ name, phone, email, district, area, address, note, payment, items, subtotal, delivery, total })
     });
-    if(res.ok){ const data = await res.json(); if(data.orderId) orderId = data.orderId; }
+    data = await res.json();
+    if(!res.ok){
+      alert(data.error || "অর্ডার সম্পন্ন করা যায়নি, একটু পর আবার চেষ্টা করুন।");
+      if(btn){ btn.disabled = false; btn.textContent = "অর্ডার করুন"; }
+      return;
+    }
   }catch(e){
-    console.warn("অর্ডার D1-এ সেভ করা যায়নি, শুধু WhatsApp-এর মাধ্যমে পাঠানো হচ্ছে:", e);
+    alert("সার্ভারে সমস্যা হয়েছে, একটু পর আবার চেষ্টা করুন।");
+    if(btn){ btn.disabled = false; btn.textContent = "অর্ডার করুন"; }
+    return;
   }
 
-  const itemLines = cart.map(l=>`• ${l.name} (${l.color}, ${l.size}) x${l.qty} — ${fmt((l.sale??l.price)*l.qty)}`).join("\n");
-  const summary = `${itemLines}\n\nSubtotal: ${fmt(subtotal)}\nDelivery: ${delivery===0?"Free":fmt(delivery)}\nTotal: ${fmt(total)}`;
-  const waText = `নতুন অর্ডার — ${orderId}\n\nনাম: ${name}\nমোবাইল: ${phone}\nঠিকানা: ${address}, ${area}, ${district}\n${note?`নোট: ${note}\n`:""}পেমেন্ট: ${payment.toUpperCase()}\n\n${summary}`;
-
-  fetch("/", { method:"POST", headers:{"Content-Type":"application/x-www-form-urlencoded"},
-    body: encodeFormData({ "form-name":"order", customerName:name, phone, email, district, area, address, note, payment, orderSummary:summary, total:fmt(total) })
-  }).catch(()=>{});
-
-  const waLink = `https://wa.me/${STORE.whatsappNumber}?text=${encodeURIComponent(waText)}`;
+  const orderId = data.order_id;
   saveCart([]);
+  const trackLink = `/order?order_id=${encodeURIComponent(orderId)}&phone=${encodeURIComponent(phone)}`;
   document.getElementById("app").innerHTML = `
     <div class="container" style="text-align:center;padding:60px 20px;max-width:420px;margin:0 auto;">
       <p style="font-size:40px;">✓</p>
-      <h1 class="serif" style="font-size:30px;margin:10px 0;">অর্ডার সম্পন্ন হচ্ছে…</h1>
-      <p style="color:var(--muted);font-size:13px;margin-bottom:6px;">আপনার অর্ডার আইডি</p>
+      <h1 class="serif" style="font-size:30px;margin:10px 0;">অর্ডার সম্পন্ন হয়েছে!</h1>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:6px;">আপনার অর্ডার আইডি:</p>
       <p class="serif" style="font-size:22px;color:var(--maroon-deep);margin-bottom:20px;">${orderId}</p>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">এখনই WhatsApp খুলে যাবে, সেখানে "Send" চাপলেই আপনার অর্ডার আমাদের কাছে পৌঁছে যাবে। উপরের আইডি দিয়ে পরে অর্ডার ট্র্যাক করতে পারবেন।</p>
-      <a href="${waLink}" target="_blank" class="btn btn-primary" style="margin-bottom:12px;">WhatsApp-এ অর্ডার পাঠান</a>
-      <a href="order.html?id=${encodeURIComponent(orderId)}" class="btn btn-outline">অর্ডার ট্র্যাক করুন</a>
+      <p style="color:var(--muted);font-size:13px;margin-bottom:24px;">এই আইডি ও আপনার মোবাইল নাম্বার দিয়ে যেকোনো সময় অর্ডারের অবস্থা ট্র্যাক করতে পারবেন।</p>
+      <a href="${trackLink}" class="btn btn-primary">অর্ডার ট্র্যাক করুন</a>
+      <a onclick="navigate('shop','All')" style="display:block;margin-top:16px;font-size:12.5px;color:var(--muted);text-decoration:underline;">কেনাকাটা চালিয়ে যান →</a>
     </div>`;
-  window.open(waLink, "_blank");
 }
 
 /* ---------- MAIN RENDER ---------- */

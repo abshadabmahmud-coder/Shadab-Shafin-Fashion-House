@@ -33,6 +33,44 @@ CREATE TABLE IF NOT EXISTS sessions (
   expires_at  INTEGER NOT NULL
 );
 
+-- গ্রাহক অ্যাকাউন্ট (ফোন নাম্বার + পাসওয়ার্ড দিয়ে লগইন)
+CREATE TABLE IF NOT EXISTS customers (
+  phone          TEXT PRIMARY KEY,   -- normalize করা ১১ ডিজিট নাম্বার (দেশ কোড ছাড়া)
+  name           TEXT NOT NULL,
+  password_hash  TEXT NOT NULL,
+  salt           TEXT NOT NULL,
+  created_at     INTEGER NOT NULL
+);
+
+-- গ্রাহক লগ-ইন সেশন টোকেন
+CREATE TABLE IF NOT EXISTS customer_sessions (
+  token       TEXT PRIMARY KEY,
+  phone       TEXT NOT NULL,
+  created_at  INTEGER NOT NULL,
+  expires_at  INTEGER NOT NULL
+);
+
+-- গ্রাহকের অর্ডার (checkout সম্পন্ন হলে তৈরি হয়)
+CREATE TABLE IF NOT EXISTS orders (
+  order_id        TEXT PRIMARY KEY,   -- যেমন SSFH-123456, ট্র্যাকিং আইডি হিসেবেও ব্যবহৃত
+  phone           TEXT NOT NULL,      -- normalize করা নাম্বার — customers.phone-এর সাথে মিলিয়ে হিস্ট্রি দেখানো হয়
+  customer_name   TEXT NOT NULL,
+  email           TEXT DEFAULT '',
+  district        TEXT DEFAULT '',
+  area            TEXT DEFAULT '',
+  address         TEXT NOT NULL,
+  note            TEXT DEFAULT '',
+  payment         TEXT DEFAULT 'cod',
+  items           TEXT NOT NULL,      -- JSON array: [{name, color, size, qty, price}]
+  subtotal        INTEGER NOT NULL,
+  delivery        INTEGER NOT NULL,
+  total           INTEGER NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'Pending',  -- Pending -> Processing -> Shipped -> Delivered (বা Cancelled)
+  created_at      INTEGER NOT NULL,
+  updated_at      INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(phone);
+
 -- ডিফল্ট স্টোর সেটিংস (অ্যাডমিন প্যানেল থেকে পরে বদলানো যাবে)
 INSERT OR IGNORE INTO settings (key, value) VALUES
   ('whatsappNumber', '8801715981918'),
@@ -42,49 +80,6 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('freeDeliveryOver', '3000'),
   ('deliveryInsideDhaka', '80'),
   ('deliveryOutsideDhaka', '150');
-
--- গ্রাহক অ্যাকাউন্ট (অর্ডার হিস্টরি/ট্র্যাকিং-এর জন্য লগ-ইন সিস্টেম)
-CREATE TABLE IF NOT EXISTS customers (
-  id              TEXT PRIMARY KEY,
-  phone           TEXT UNIQUE NOT NULL,   -- normalized: দেশ কোড ও শুরুর 0 ছাড়া (যেমন 1715981918)
-  name            TEXT NOT NULL,
-  email           TEXT DEFAULT '',
-  password_hash   TEXT NOT NULL,
-  password_salt   TEXT NOT NULL,
-  created_at      INTEGER NOT NULL
-);
-
--- গ্রাহক লগ-ইন সেশন টোকেন
-CREATE TABLE IF NOT EXISTS customer_sessions (
-  token       TEXT PRIMARY KEY,
-  customer_id TEXT NOT NULL,
-  created_at  INTEGER NOT NULL,
-  expires_at  INTEGER NOT NULL
-);
-
--- গ্রাহকের অর্ডার (চেকআউট করলেই একটি সারি তৈরি হয়, ইউনিক ট্র্যাকিং আইডিসহ)
-CREATE TABLE IF NOT EXISTS orders (
-  id              TEXT PRIMARY KEY,       -- ট্র্যাকিং আইডি, যেমন SSFH-48213
-  customer_id     TEXT,                   -- লগ-ইন করা অবস্থায় অর্ডার করলে customers.id, নাহলে NULL (গেস্ট অর্ডার)
-  customer_phone  TEXT NOT NULL,          -- normalized ফোন — লগ-ইন/ট্র্যাকিং ম্যাচিং-এর জন্য
-  name            TEXT NOT NULL,
-  phone_display   TEXT NOT NULL,          -- গ্রাহক যেভাবে টাইপ করেছেন সেভাবে দেখানোর জন্য
-  email           TEXT DEFAULT '',
-  district        TEXT DEFAULT '',
-  area            TEXT DEFAULT '',
-  address         TEXT NOT NULL,
-  note            TEXT DEFAULT '',
-  payment_method  TEXT DEFAULT 'cod',
-  items           TEXT NOT NULL,          -- JSON array: [{name,color,size,qty,price}]
-  subtotal        INTEGER NOT NULL,
-  delivery        INTEGER NOT NULL DEFAULT 0,
-  total           INTEGER NOT NULL,
-  status          TEXT NOT NULL DEFAULT 'pending', -- pending | confirmed | processing | shipped | delivered | cancelled
-  created_at      INTEGER NOT NULL,
-  updated_at      INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_orders_phone ON orders(customer_phone);
-CREATE INDEX IF NOT EXISTS idx_orders_customer ON orders(customer_id);
 
 -- ডিফল্ট ৬টি নমুনা পণ্য (চাইলে অ্যাডমিন প্যানেল থেকে এডিট/ডিলিট করুন)
 INSERT OR IGNORE INTO products (id, name, category, subcategory, price, sale, colors, sizes, images, description, description_en, fabric, care, sort_order, created_at, updated_at) VALUES ('p1', 'Draped Silk Saree', 'Women', 'Saree', 6200, 4650, '[{"name": "Ink Black", "hex": "#14110F"}, {"name": "Champagne Gold", "hex": "#C9A24B"}]', '[{"size": "Free Size", "stock": 12}]', '["https://picsum.photos/seed/aora-p1-a/700/900", "https://picsum.photos/seed/aora-p1-b/700/900"]', 'একটি হাতে-তৈরি সিল্ক শাড়ি, নরম শ্যাম্পেইন-গোল্ড পাড় সহ।', 'A handcrafted silk saree with a soft champagne-gold border.', 'Pure Silk', 'Dry Clean Only', 0, 1735689600000, 1735689600000);

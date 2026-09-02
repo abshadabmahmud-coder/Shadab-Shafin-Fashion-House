@@ -1,22 +1,24 @@
-import { jsonResponse, normalizePhone, orderRowToJSON } from "../_utils.js";
+import { jsonResponse, normalizePhone } from "../_utils.js";
 
-// GET /api/orders/track?id=SSFH-XXXXX&phone=01XXXXXXXXX
-// পাবলিক এন্ডপয়েন্ট, কিন্তু প্রাইভেসির জন্য অর্ডার আইডি + অর্ডারে দেওয়া মোবাইল নাম্বার দুটোই মিলতে হবে।
 export async function onRequestGet({ request, env }) {
-  if (!env.DB) return jsonResponse({ error: "D1 ডাটাবেজ বাইন্ড করা নেই (env.DB)।" }, 500);
+  if (!env.DB) return jsonResponse({ error: "D1 ডাটাবেজ বাইন্ড করা নেই।" }, 500);
 
   const url = new URL(request.url);
-  const id = String(url.searchParams.get("id") || "").trim().toUpperCase();
-  const phoneNorm = normalizePhone(url.searchParams.get("phone") || "");
+  const orderId = (url.searchParams.get("order_id") || "").trim();
+  const phone = normalizePhone(url.searchParams.get("phone"));
 
-  if (!id || !phoneNorm) {
-    return jsonResponse({ error: "অর্ডার আইডি ও মোবাইল নাম্বার দিন" }, 400);
+  if (!orderId || phone.length !== 11) {
+    return jsonResponse({ error: "অর্ডার আইডি ও মোবাইল নাম্বার দুটোই দিন।" }, 400);
   }
 
-  const row = await env.DB.prepare("SELECT * FROM orders WHERE id = ?").bind(id).first();
-  if (!row || row.customer_phone !== phoneNorm) {
-    return jsonResponse({ error: "not_found" }, 404);
+  const order = await env.DB.prepare(
+    "SELECT order_id, customer_name, phone, district, area, address, payment, items, subtotal, delivery, total, status, created_at, updated_at FROM orders WHERE order_id = ? AND phone = ?"
+  ).bind(orderId, phone).first();
+
+  if (!order) {
+    return jsonResponse({ error: "এই অর্ডার আইডি ও মোবাইল নাম্বার দিয়ে কোনো অর্ডার পাওয়া যায়নি।" }, 404);
   }
 
-  return jsonResponse(orderRowToJSON(row));
+  order.items = JSON.parse(order.items || "[]");
+  return jsonResponse(order);
 }
