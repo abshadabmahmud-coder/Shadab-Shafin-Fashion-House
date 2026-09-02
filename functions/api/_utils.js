@@ -42,11 +42,11 @@ export async function hashPassword(password, salt) {
   return bufToHex(digest);
 }
 
-// গ্রাহকের ফোন নাম্বার সাধারণ ফরম্যাটে নিয়ে আসে (স্পেস/ড্যাশ/দেশ কোড বাদ) যাতে একই নাম্বার সবসময় একইভাবে মেলে
+// গ্রাহকের ফোন নাম্বার সাধারণ ১১-ডিজিট লোকাল ফরম্যাটে (01XXXXXXXXX) নিয়ে আসে, যাতে
+// দেশ কোডসহ (৮৮০...) বা ছাড়া যেভাবেই দেওয়া হোক, একই নাম্বার সবসময় একইভাবে মেলে
 export function normalizePhone(raw) {
   let p = String(raw || "").replace(/[^\d]/g, "");
-  if (p.startsWith("880") && p.length === 13) p = p.slice(3);
-  if (p.startsWith("0") && p.length === 11) p = p.slice(1);
+  if (p.startsWith("880") && p.length === 13) p = "0" + p.slice(3); // 8801XXXXXXXXX -> 01XXXXXXXXX
   return p;
 }
 
