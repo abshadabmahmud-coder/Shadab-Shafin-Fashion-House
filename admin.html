@@ -109,6 +109,18 @@ textarea#codeOutput{width:100%;height:220px;font-family:monospace;font-size:12px
         <tbody id="prodTableBody"></tbody>
       </table>
     </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:36px 0 16px;flex-wrap:wrap;gap:10px;">
+      <h1 class="serif" style="font-size:26px;">অর্ডার তালিকা (<span id="orderCount">0</span>)</h1>
+      <button class="btn btn-outline" onclick="loadOrders()">রিফ্রেশ</button>
+    </div>
+
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table>
+        <thead><tr><th>অর্ডার আইডি</th><th>গ্রাহক</th><th>ফোন</th><th>তারিখ</th><th>মোট</th><th>স্ট্যাটাস</th></tr></thead>
+        <tbody id="orderTableBody"></tbody>
+      </table>
+    </div>
   </div>
 </div>
 
@@ -244,6 +256,53 @@ const DEFAULT_PRODUCTS = [
 let PRODUCTS = [];
 let editColors = [];
 let editImages = [];
+let ORDERS = [];
+
+/* ---------- ORDERS ---------- */
+const ORDER_STATUSES = ["Pending","Processing","Shipped","Delivered","Cancelled"];
+async function loadOrders(){
+  try {
+    const res = await apiFetch("/api/admin/orders");
+    if(res.ok){ ORDERS = await res.json(); } else { ORDERS = []; }
+  } catch(e) {
+    ORDERS = [];
+    console.warn("অর্ডার লোড করা যায়নি:", e);
+  }
+  renderOrdersTable();
+}
+function renderOrdersTable(){
+  document.getElementById("orderCount").textContent = ORDERS.length;
+  document.getElementById("orderTableBody").innerHTML = ORDERS.length === 0
+    ? `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">কোনো অর্ডার নেই</td></tr>`
+    : ORDERS.map(o=>`
+      <tr>
+        <td><span class="serif">${o.order_id}</span></td>
+        <td>${o.customer_name}</td>
+        <td>${o.phone}</td>
+        <td>${new Date(o.created_at).toLocaleDateString("bn-BD",{year:"numeric",month:"short",day:"numeric"})}</td>
+        <td>${fmt(o.total)}</td>
+        <td>
+          <select class="form-input" style="margin-bottom:0;padding:6px 8px;" onchange="updateOrderStatus('${o.order_id}', this.value)">
+            ${ORDER_STATUSES.map(s=>`<option value="${s}" ${s===o.status?"selected":""}>${s}</option>`).join("")}
+          </select>
+        </td>
+      </tr>`).join("");
+}
+async function updateOrderStatus(orderId, status){
+  try {
+    const res = await apiFetch("/api/admin/orders", {
+      method:"PUT",
+      body: JSON.stringify({ order_id: orderId, status })
+    });
+    const data = await res.json();
+    if(!res.ok){ alert(data.error || "স্ট্যাটাস আপডেট করা যায়নি।"); loadOrders(); return; }
+    const o = ORDERS.find(x=>x.order_id===orderId);
+    if(o) o.status = status;
+  } catch(e) {
+    alert("সার্ভারে সমস্যা হয়েছে।");
+    loadOrders();
+  }
+}
 
 /* ---------- STORE SETTINGS (WhatsApp / Telegram / Email) ---------- */
 const DEFAULT_STORE_SETTINGS = {
@@ -390,6 +449,7 @@ async function checkGate(){
     document.getElementById("adminApp").style.display = "block";
     await loadProducts();
     await loadStoreSettings();
+    await loadOrders();
   } catch(e) {
     msgEl.textContent = "সার্ভারে সংযোগ করা যায়নি। D1/Functions ঠিকমতো সেটআপ হয়েছে কিনা README অনুযায়ী চেক করুন।";
   }
