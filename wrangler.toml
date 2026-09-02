@@ -1,0 +1,12 @@
+name = "shadab-shafin-fashion-house"
+pages_build_output_dir = "."
+compatibility_date = "2026-01-01"
+
+# GitHub থেকে Cloudflare Pages ড্যাশবোর্ডে ডিপ্লয় করলে D1 বাইন্ডিং ড্যাশবোর্ড থেকেই যোগ করতে হয়
+# (Settings → Functions → D1 database bindings, variable name অবশ্যই DB)।
+# নিচের ব্লকটি শুধু আপনি লোকালি `wrangler pages dev` দিয়ে টেস্ট করতে চাইলে কাজে লাগবে —
+# তখন <YOUR_DATABASE_ID> জায়গায় `wrangler d1 create` কমান্ড থেকে পাওয়া আসল ID বসান।
+[[d1_databases]]
+binding = "DB"
+database_name = "shadab-shafin-db"
+database_id = "<YOUR_DATABASE_ID>"

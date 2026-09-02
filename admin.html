@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — শাদাব-শাফিন ফ্যাশন হাউস</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;500;600;700&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap');
+:root{--ink:#1C1410;--ivory:#FBF6EC;--gold:#B8933E;--gold-light:#E4C97A;--maroon:#6B1420;--maroon-deep:#4A0D16;--taupe:#A99985;--blush:#F1E4D2;--line:#E6D8C0;--line-strong:#D6C39F;--muted:#8A7A6B;--error:#8B4A2B;--success:#4A5D3A;--bg:#F3EBDA;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--ink);font-family:'Hind Siliguri',sans-serif;font-size:14px;}
+.serif{font-family:'Noto Serif Bengali',serif;}
+a{color:inherit;}
+button{font-family:inherit;cursor:pointer;border:none;background:none;}
+input,select,textarea{font-family:inherit;font-size:13px;}
+.container{max-width:1100px;margin:0 auto;padding:0 20px;}
+.topbar{background:var(--maroon-deep);color:var(--ivory);}
+.topbar-inner{display:flex;align-items:center;justify-content:space-between;height:64px;max-width:1100px;margin:0 auto;padding:0 20px;}
+.logo{font-family:'Noto Serif Bengali',serif;letter-spacing:.01em;font-size:18px;}
+.btn{padding:11px 18px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;}
+.btn-primary{background:var(--maroon-deep);color:var(--ivory);}
+.btn-gold{background:linear-gradient(120deg,var(--gold),var(--gold-light));color:var(--maroon-deep);font-weight:600;}
+.btn-outline{border:1px solid var(--line-strong);}
+.btn-danger{color:var(--error);}
+.card{background:var(--ivory);border:1px solid var(--line);padding:20px;margin-bottom:20px;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;color:var(--muted);font-weight:400;padding:8px;border-bottom:1px solid var(--line);}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle;}
+.thumb{width:40px;height:52px;object-fit:cover;background:var(--blush);}
+.pill{font-size:10px;text-transform:uppercase;padding:3px 7px;background:var(--blush);}
+.low{color:var(--error);}
+.form-input{width:100%;padding:11px 13px;border:1px solid var(--line-strong);background:transparent;outline:none;margin-bottom:10px;}
+.form-input:focus{border-color:var(--ink);}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.section-title{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:16px 0 8px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px;}
+.chip{padding:8px 12px;border:1px solid var(--line-strong);font-size:12px;display:flex;align-items:center;gap:6px;}
+.chip button{color:var(--error);font-weight:600;}
+.swatch-dot{width:12px;height:12px;border-radius:50%;display:inline-block;border:1px solid var(--line-strong);}
+#gate{position:fixed;inset:0;background:var(--ink);display:flex;align-items:center;justify-content:center;z-index:200;}
+#gate .box{background:var(--ivory);padding:40px;max-width:320px;width:90%;text-align:center;}
+textarea#codeOutput{width:100%;height:220px;font-family:monospace;font-size:12px;padding:12px;border:1px solid var(--line-strong);}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--ink);color:var(--ivory);padding:14px 24px;font-size:13px;z-index:300;transition:transform .3s;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<!-- সাধারণ পাসকোড গেট — এটা প্রকৃত সিকিউরিটি না, শুধু casual visitor ঠেকাতে।
+     আসল সুরক্ষার জন্য এই ফাইলের লিংক কারো সাথে শেয়ার করবেন না। -->
+<div id="gate">
+  <div class="box">
+    <p class="serif" style="font-size:20px;margin-bottom:14px;">শাদাব-শাফিন ফ্যাশন হাউস · Admin</p>
+    <input class="form-input" type="password" id="gateInput" placeholder="পাসকোড দিন">
+    <button class="btn btn-primary" style="width:100%;" onclick="checkGate()">প্রবেশ করুন</button>
+    <p id="gateMsg" style="font-size:11.5px;color:var(--error);margin-top:10px;"></p>
+    <p style="font-size:11px;color:var(--muted);margin-top:10px;">পাসকোড এখন Cloudflare Pages-এর <code>ADMIN_PASSCODE</code> এনভায়রনমেন্ট ভ্যারিয়েবলে সেট করা থাকে (কোডের ভিতরে না) — README দেখুন।</p>
+  </div>
+</div>
+
+<div id="adminApp" style="display:none;">
+  <div class="topbar">
+    <div class="topbar-inner">
+      <span class="logo">শাদাব-শাফিন · Admin</span>
+      <div style="display:flex;align-items:center;gap:16px;">
+        <a href="index.html" style="font-size:12px;text-transform:uppercase;letter-spacing:.08em;">← স্টোরে ফিরুন</a>
+        <button class="btn btn-outline" style="padding:6px 12px;color:var(--ivory);border-color:var(--ivory);" onclick="logout()">লগ-আউট</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container" style="padding:30px 20px 60px;">
+    <div class="card" style="background:var(--blush);">
+      <p class="serif" style="font-size:16px;margin-bottom:6px;">এই প্যানেল কীভাবে কাজ করে</p>
+      <p style="font-size:12.5px;color:#5C5348;line-height:1.7;">
+        এখন এই সাইটের একটি আসল ব্যাকএন্ড আছে (Cloudflare Pages Functions + D1 ডাটাবেজ)। এখানে পণ্য
+        যোগ/এডিট/ডিলিট করলে বা সেটিংস বদলালে তা সরাসরি D1 ডাটাবেজে সেভ হয় এবং <b>সব ভিজিটরের জন্য
+        সাথে সাথে স্থায়ীভাবে</b> কার্যকর হয়ে যায় — আলাদা করে কোনো কোড কপি-পেস্ট বা রি-আপলোডের দরকার নেই।
+      </p>
+      <p style="font-size:12.5px;color:#5C5348;line-height:1.7;margin-top:8px;">
+        📷 মোবাইল দিয়ে ছবি তুললে বা গ্যালারি থেকে বাছলে ছবি স্বয়ংক্রিয়ভাবে ছোট/কম্প্রেস হয়ে সরাসরি কোডের ভেতরে বসে যায় —
+        আলাদা কোনো ইমেজ হোস্টিং লাগে না। তবে অনেকগুলো বড় ছবি যোগ করলে "Store.html-এ বসানোর কোড" অনেক বড় হয়ে যেতে পারে,
+        তাই প্রতি পণ্যে ২-৪টা ছবিই যথেষ্ট।
+      </p>
+    </div>
+
+    <div class="card">
+      <p class="serif" style="font-size:16px;margin-bottom:10px;">যোগাযোগ / স্টোর সেটিংস</p>
+      <p style="font-size:12px;color:var(--muted);margin-bottom:14px;line-height:1.6;">এই নাম্বার/ইমেইলেই কাস্টমারের অর্ডার ও মেসেজ আসবে। "সংরক্ষণ করুন"-এ ক্লিক করলে সরাসরি D1 ডাটাবেজে সেভ হয়ে সব ভিজিটরের জন্য সাথে সাথে লাইভ হয়ে যাবে।</p>
+      <div class="row2">
+        <div><label class="section-title">WhatsApp নাম্বার (দেশ কোডসহ, + ছাড়া)</label><input class="form-input" id="sWhatsapp" placeholder="8801XXXXXXXXX"></div>
+        <div><label class="section-title">Telegram নাম্বার (দেশ কোডসহ, + ছাড়া)</label><input class="form-input" id="sTelegram" placeholder="8801XXXXXXXXX"></div>
+      </div>
+      <label class="section-title">Gmail / ইমেইল</label>
+      <input class="form-input" id="sEmail" placeholder="you@gmail.com">
+      <button class="btn btn-primary" onclick="saveStoreSettings()">সেটিংস সংরক্ষণ করুন</button>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <h1 class="serif" style="font-size:26px;">পণ্য তালিকা (<span id="prodCount">0</span>)</h1>
+      <div style="display:flex;gap:10px;">
+        <button class="btn btn-primary" onclick="openForm(null)">+ নতুন পণ্য</button>
+      </div>
+    </div>
+
+    <div class="card" style="padding:0;overflow-x:auto;">
+      <table>
+        <thead><tr><th></th><th>নাম</th><th>ক্যাটাগরি</th><th>দাম</th><th>স্টক</th><th></th></tr></thead>
+        <tbody id="prodTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Add/Edit product panel -->
+<div id="formOverlay" style="display:none;position:fixed;inset:0;background:rgba(20,17,15,.55);z-index:150;">
+  <div style="background:var(--ivory);max-width:560px;margin:30px auto;padding:28px;max-height:88vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <p class="serif" style="font-size:20px;" id="formTitle">নতুন পণ্য</p>
+      <button onclick="closeForm()" style="font-size:20px;">✕</button>
+    </div>
+
+    <input type="hidden" id="fId">
+    <label class="section-title">পণ্যের নাম</label>
+    <input class="form-input" id="fName" placeholder="যেমন: Draped Silk Saree">
+
+    <div class="row2">
+      <div><label class="section-title">ক্যাটাগরি</label>
+        <select class="form-input" id="fCategory">
+          <option>Women</option><option>Men</option><option>Kids</option><option>Accessories</option>
+        </select>
+      </div>
+      <div><label class="section-title">সাব-ক্যাটাগরি</label>
+        <input class="form-input" id="fSubcategory" placeholder="যেমন: Saree, Panjabi">
+      </div>
+    </div>
+
+    <div class="row2">
+      <div><label class="section-title">নিয়মিত দাম (৳)</label><input class="form-input" type="number" id="fPrice"></div>
+      <div><label class="section-title">সেল দাম (৳, ঐচ্ছিক)</label><input class="form-input" type="number" id="fSale"></div>
+    </div>
+
+    <label class="section-title">বিবরণ</label>
+    <textarea class="form-input" id="fDesc" rows="3"></textarea>
+
+    <div class="row2">
+      <div><label class="section-title">Fabric</label><input class="form-input" id="fFabric"></div>
+      <div><label class="section-title">Care Instructions</label><input class="form-input" id="fCare"></div>
+    </div>
+
+    <label class="section-title">পণ্যের ছবি</label>
+    <p style="font-size:11.5px;color:var(--muted);margin-bottom:8px;line-height:1.6;">মোবাইল দিয়ে সরাসরি ছবি তুলুন অথবা গ্যালারি থেকে বেছে নিন। প্রথম ছবিটি প্রচ্ছদ (cover) হিসেবে দেখানো হবে — অন্য কোনোটি কভার করতে ★ বাটনে চাপুন। বড় ছবি নিজে থেকেই ছোট ও কম্প্রেস হয়ে যাবে।</p>
+    <input type="file" id="fCameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleImageFiles(this.files); this.value='';">
+    <input type="file" id="fGalleryInput" accept="image/*" multiple style="display:none" onchange="handleImageFiles(this.files); this.value='';">
+    <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
+      <button type="button" class="btn btn-gold" onclick="document.getElementById('fCameraInput').click()">📷 ছবি তুলুন</button>
+      <button type="button" class="btn btn-outline" onclick="document.getElementById('fGalleryInput').click()">🖼️ গ্যালারি থেকে বাছুন</button>
+    </div>
+    <div id="imagePreviewGrid" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px;"></div>
+    <p id="imageUploadStatus" style="font-size:11px;color:var(--muted);margin-bottom:10px;"></p>
+    <details style="margin-bottom:14px;">
+      <summary style="font-size:11.5px;color:var(--muted);cursor:pointer;">অথবা ছবির লিংক পেস্ট করুন (ঐচ্ছিক)</summary>
+      <label class="section-title">ছবির লিংক (একটা লাইনে একটা)</label>
+      <textarea class="form-input" id="fImages" rows="2" placeholder="https://... &#10;https://..." style="margin-top:6px;"></textarea>
+    </details>
+
+    <label class="section-title">রং (নাম ও hex কোড দিয়ে যোগ করুন)</label>
+    <div class="chip-row" id="colorChips"></div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;">
+      <input type="color" id="newColorHex" value="#14110F" style="width:42px;height:38px;padding:0;border:1px solid var(--line-strong);">
+      <input class="form-input" id="newColorName" placeholder="রং-এর নাম" style="margin-bottom:0;">
+      <button class="btn btn-outline" onclick="addColorChip()">+ যোগ</button>
+    </div>
+
+    <label class="section-title">সাইজ ও স্টক (সাইজ:স্টক — একটা লাইনে একটা)</label>
+    <textarea class="form-input" id="fSizes" rows="3" placeholder="S:6&#10;M:9&#10;L:5"></textarea>
+
+    <button class="btn btn-primary" style="width:100%;margin-top:8px;" onclick="saveProduct()">সংরক্ষণ করুন</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// পাসকোড এখন এই ফাইলে নেই — Cloudflare Pages-এর ADMIN_PASSCODE এনভায়রনমেন্ট ভ্যারিয়েবল/সিক্রেট
+// দিয়ে ব্যাকএন্ডে (functions/api/admin/login.js) যাচাই করা হয়। README-তে বিস্তারিত আছে।
+let AUTH_TOKEN = sessionStorage.getItem("aora_admin_token") || null;
+
+// লগ-ইন প্রয়োজন এমন সব API কলের জন্য ব্যবহার করুন — টোকেন এক্সপায়ার হলে স্বয়ংক্রিয়ভাবে লগ-আউট করে গেট দেখাবে
+async function apiFetch(url, options={}){
+  options.headers = Object.assign({}, options.headers, {
+    "Content-Type": "application/json",
+    "Authorization": "Bearer " + (AUTH_TOKEN || "")
+  });
+  const res = await fetch(url, options);
+  if(res.status === 401){
+    logout();
+    alert("সেশনের মেয়াদ শেষ হয়ে গেছে, আবার পাসকোড দিয়ে লগ-ইন করুন।");
+  }
+  return res;
+}
+function logout(){
+  AUTH_TOKEN = null;
+  sessionStorage.removeItem("aora_admin_token");
+  document.getElementById("adminApp").style.display = "none";
+  document.getElementById("gate").style.display = "flex";
+  document.getElementById("gateInput").value = "";
+}
+
+// নেটওয়ার্ক/API সমস্যায় খালি স্ক্রিন এড়াতে সামান্য ফলব্যাক ডেটা (API ঠিকমতো কাজ করলে এটা ব্যবহার হবে না)
+const DEFAULT_PRODUCTS = [
+  { id:"p1", name:"Draped Silk Saree", category:"Women", subcategory:"Saree", price:6200, sale:4650,
+    colors:[{name:"Ink Black",hex:"#14110F"},{name:"Champagne Gold",hex:"#C9A24B"}],
+    sizes:[{size:"Free Size",stock:12}],
+    images:["https://picsum.photos/seed/aora-p1-a/700/900","https://picsum.photos/seed/aora-p1-b/700/900"],
+    description:"একটি হাতে-তৈরি সিল্ক শাড়ি, নরম শ্যাম্পেইন-গোল্ড পাড় সহ।", fabric:"Pure Silk", care:"Dry Clean Only" },
+  { id:"p2", name:"Structured Linen Panjabi", category:"Men", subcategory:"Panjabi", price:3400, sale:null,
+    colors:[{name:"Ivory",hex:"#F7F3EC"},{name:"Charcoal",hex:"#2B2723"}],
+    sizes:[{size:"M",stock:8},{size:"L",stock:10},{size:"XL",stock:4}],
+    images:["https://picsum.photos/seed/aora-p2-a/700/900","https://picsum.photos/seed/aora-p2-b/700/900"],
+    description:"প্রিমিয়াম লিনেন কাপড়ে তৈরি পাঞ্জাবি, আরামদায়ক ফিট।", fabric:"Linen", care:"Machine Wash Cold" },
+  { id:"p3", name:"Hand-Embroidered Kurti", category:"Women", subcategory:"Kurti", price:2450, sale:1960,
+    colors:[{name:"Rust Clay",hex:"#8B4A2B"},{name:"Ivory",hex:"#F7F3EC"}],
+    sizes:[{size:"S",stock:6},{size:"M",stock:9},{size:"L",stock:5}],
+    images:["https://picsum.photos/seed/aora-p3-a/700/900","https://picsum.photos/seed/aora-p3-b/700/900"],
+    description:"হাতের কাজের এমব্রয়ডারি করা কুর্তি, রিল্যাক্সড ফিট।", fabric:"Cotton Blend", care:"Hand Wash Recommended" },
+  { id:"p4", name:"Two-Piece Kids Occasion Set", category:"Kids", subcategory:"Party Wear", price:1900, sale:null,
+    colors:[{name:"Champagne Gold",hex:"#C9A24B"}],
+    sizes:[{size:"3-4Y",stock:5},{size:"5-6Y",stock:7},{size:"7-8Y",stock:3}],
+    images:["https://picsum.photos/seed/aora-p4-a/700/900","https://picsum.photos/seed/aora-p4-b/700/900"],
+    description:"উৎসবের জন্য দুই-পিস সেট, নরম কাপড় ও আরামদায়ক ফিট।", fabric:"Cotton Silk", care:"Dry Clean Only" },
+  { id:"p5", name:"Merino Wool Overcoat", category:"Men", subcategory:"Jacket", price:8900, sale:7100,
+    colors:[{name:"Ink Black",hex:"#14110F"},{name:"Charcoal",hex:"#2B2723"}],
+    sizes:[{size:"M",stock:3},{size:"L",stock:6},{size:"XL",stock:2}],
+    images:["https://picsum.photos/seed/aora-p5-a/700/900","https://picsum.photos/seed/aora-p5-b/700/900"],
+    description:"মেরিনো উলে তৈরি ওভারকোট, শীতের জন্য উষ্ণ।", fabric:"Merino Wool", care:"Dry Clean Only" },
+  { id:"p6", name:"Minimal Leather Belt", category:"Accessories", subcategory:"Belt", price:1200, sale:900,
+    colors:[{name:"Ink Black",hex:"#14110F"}],
+    sizes:[{size:"One Size",stock:15}],
+    images:["https://picsum.photos/seed/aora-p6-a/700/900","https://picsum.photos/seed/aora-p6-b/700/900"],
+    description:"খাঁটি চামড়ার তৈরি মিনিমাল বেল্ট।", fabric:"Genuine Leather", care:"Wipe Clean" },
+];
+
+let PRODUCTS = [];
+let editColors = [];
+let editImages = [];
+
+/* ---------- STORE SETTINGS (WhatsApp / Telegram / Email) ---------- */
+const DEFAULT_STORE_SETTINGS = {
+  whatsappNumber: "8801715981918",
+  telegramNumber: "8801715981918",
+  email: "abdullahalshadabmahmud@gmail.com"
+};
+let STORE_SETTINGS = {};
+async function loadStoreSettings(){
+  STORE_SETTINGS = Object.assign({}, DEFAULT_STORE_SETTINGS);
+  try {
+    const res = await fetch("/api/settings");
+    if(res.ok){
+      const s = await res.json();
+      if(s && typeof s === "object") Object.assign(STORE_SETTINGS, s);
+    }
+  } catch(e) { console.warn("সেটিংস লোড করা যায়নি, ডিফল্ট দেখানো হচ্ছে:", e); }
+  document.getElementById("sWhatsapp").value = STORE_SETTINGS.whatsappNumber || "";
+  document.getElementById("sTelegram").value = STORE_SETTINGS.telegramNumber || "";
+  document.getElementById("sEmail").value = STORE_SETTINGS.email || "";
+}
+async function saveStoreSettings(){
+  const whatsappNumber = document.getElementById("sWhatsapp").value.trim();
+  const telegramNumber = document.getElementById("sTelegram").value.trim();
+  const email = document.getElementById("sEmail").value.trim();
+  if(!/^\d{10,15}$/.test(whatsappNumber)){ alert("WhatsApp নাম্বার শুধু সংখ্যায়, দেশ কোডসহ দিন (যেমন: 8801715981918)"); return; }
+  STORE_SETTINGS = { whatsappNumber, telegramNumber, email };
+  try {
+    const res = await apiFetch("/api/settings", { method:"PUT", body: JSON.stringify(STORE_SETTINGS) });
+    if(!res.ok) throw new Error("save failed");
+    showToast("সেটিংস সংরক্ষিত হয়েছে");
+  } catch(e) {
+    alert("সেটিংস সেভ করা যায়নি। ইন্টারনেট/সেশন চেক করে আবার চেষ্টা করুন।");
+  }
+}
+
+/* ---------- IMAGE UPLOAD / CAMERA CAPTURE ---------- */
+function fileToCompressedDataURL(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = e=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > maxDim || h > maxDim){
+          if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = ()=>reject(new Error("ছবি লোড করা যায়নি"));
+      img.src = e.target.result;
+    };
+    reader.onerror = ()=>reject(new Error("ফাইল পড়া যায়নি"));
+    reader.readAsDataURL(file);
+  });
+}
+async function handleImageFiles(fileList){
+  const files = Array.from(fileList || []).filter(f=>f.type && f.type.startsWith("image/"));
+  if(!files.length) return;
+  const statusEl = document.getElementById("imageUploadStatus");
+  statusEl.textContent = `${files.length}টি ছবি প্রসেস হচ্ছে...`;
+  let done = 0;
+  for(const file of files){
+    try{
+      const dataUrl = await fileToCompressedDataURL(file, 1200, 0.82);
+      editImages.push(dataUrl);
+      done++;
+      renderImageChips();
+    }catch(err){
+      console.error(err);
+    }
+  }
+  statusEl.textContent = done ? `${done}টি ছবি যোগ হয়েছে।` : "ছবি যোগ করা যায়নি, আবার চেষ্টা করুন।";
+  setTimeout(()=>{ statusEl.textContent = ""; }, 2500);
+}
+function renderImageChips(){
+  const grid = document.getElementById("imagePreviewGrid");
+  if(!editImages.length){
+    grid.innerHTML = `<span style="font-size:12px;color:var(--muted);">এখনো কোনো ছবি যোগ হয়নি</span>`;
+    return;
+  }
+  grid.innerHTML = editImages.map((src,i)=>`
+    <div style="position:relative;width:76px;height:98px;">
+      <img src="${src}" style="width:100%;height:100%;object-fit:cover;border:1px solid var(--line-strong);display:block;">
+      ${i===0?`<span style="position:absolute;top:3px;left:3px;background:var(--maroon-deep);color:var(--ivory);font-size:8px;letter-spacing:.04em;padding:2px 5px;">COVER</span>`:""}
+      <button type="button" onclick="removeImageChip(${i})" title="মুছুন" style="position:absolute;top:-7px;right:-7px;background:var(--error);color:#fff;width:20px;height:20px;border-radius:50%;font-size:11px;line-height:20px;">✕</button>
+      ${i>0?`<button type="button" onclick="moveImageChip(${i})" title="প্রচ্ছদ (cover) করুন" style="position:absolute;bottom:-7px;left:-7px;background:var(--gold);color:var(--maroon-deep);width:20px;height:20px;border-radius:50%;font-size:11px;line-height:20px;">★</button>`:""}
+    </div>`).join("");
+}
+function removeImageChip(i){ editImages.splice(i,1); renderImageChips(); }
+function moveImageChip(i){ const [item] = editImages.splice(i,1); editImages.unshift(item); renderImageChips(); }
+
+async function loadProducts(){
+  try {
+    const res = await fetch("/api/products");
+    if(res.ok){
+      const data = await res.json();
+      PRODUCTS = Array.isArray(data) && data.length ? data : JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+    } else {
+      PRODUCTS = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+    }
+  } catch(e) {
+    PRODUCTS = JSON.parse(JSON.stringify(DEFAULT_PRODUCTS));
+    console.warn("প্রোডাক্ট লোড করা যায়নি, ডিফল্ট দেখানো হচ্ছে:", e);
+  }
+  renderTable();
+}
+
+async function checkGate(){
+  const val = document.getElementById("gateInput").value;
+  const msgEl = document.getElementById("gateMsg");
+  msgEl.textContent = "";
+  try {
+    const res = await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ passcode: val })
+    });
+    if(!res.ok){
+      let serverMsg = "";
+      try {
+        const errData = await res.json();
+        serverMsg = errData && errData.error ? errData.error : "";
+      } catch(e) {}
+
+      if(res.status === 401){
+        msgEl.textContent = "ভুল পাসকোড।";
+      } else if(serverMsg){
+        msgEl.textContent = "সেটআপ সমস্যা: " + serverMsg;
+      } else {
+        msgEl.textContent = "লগইন ব্যর্থ (স্ট্যাটাস " + res.status + ")। README-এর সেটআপ ধাপগুলো চেক করুন।";
+      }
+      return;
+    }
+    const data = await res.json();
+    AUTH_TOKEN = data.token;
+    sessionStorage.setItem("aora_admin_token", AUTH_TOKEN);
+    document.getElementById("gate").style.display = "none";
+    document.getElementById("adminApp").style.display = "block";
+    await loadProducts();
+    await loadStoreSettings();
+  } catch(e) {
+    msgEl.textContent = "সার্ভারে সংযোগ করা যায়নি। D1/Functions ঠিকমতো সেটআপ হয়েছে কিনা README অনুযায়ী চেক করুন।";
+  }
+}
+document.getElementById("gateInput").addEventListener("keydown", e=>{ if(e.key==="Enter") checkGate(); });
+
+function fmt(n){ return "৳" + Number(n).toLocaleString("en-IN"); }
+function totalStock(p){ return p.sizes.reduce((s,x)=>s+x.stock,0); }
+
+function renderTable(){
+  document.getElementById("prodCount").textContent = PRODUCTS.length;
+  document.getElementById("prodTableBody").innerHTML = PRODUCTS.map(p=>{
+    const stock = totalStock(p);
+    return `<tr>
+      <td><img class="thumb" src="${p.images[0]}"></td>
+      <td><span class="serif">${p.name}</span></td>
+      <td><span class="pill">${p.category}</span></td>
+      <td>${p.sale?`${fmt(p.sale)} <span style="text-decoration:line-through;color:var(--muted);font-size:11px;">${fmt(p.price)}</span>`:fmt(p.price)}</td>
+      <td class="${stock<=5?"low":""}">${stock} pcs</td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-outline" onclick="openForm('${p.id}')" style="padding:6px 10px;">Edit</button>
+        <button class="btn btn-danger" onclick="deleteProduct('${p.id}')" style="padding:6px 10px;">Delete</button>
+      </td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);">কোনো পণ্য নেই।</td></tr>`;
+}
+
+async function deleteProduct(id){
+  if(!confirm("এই পণ্যটি মুছে ফেলতে চান?")) return;
+  try {
+    const res = await apiFetch("/api/products/" + encodeURIComponent(id), { method:"DELETE" });
+    if(!res.ok) throw new Error("delete failed");
+    PRODUCTS = PRODUCTS.filter(p=>p.id!==id);
+    renderTable();
+    showToast("মুছে ফেলা হয়েছে");
+  } catch(e) {
+    alert("পণ্যটি মুছে ফেলা যায়নি। আবার চেষ্টা করুন।");
+  }
+}
+
+function openForm(id){
+  document.getElementById("formOverlay").style.display = "block";
+  const p = id ? PRODUCTS.find(x=>x.id===id) : null;
+  document.getElementById("formTitle").textContent = p ? "পণ্য এডিট করুন" : "নতুন পণ্য";
+  document.getElementById("fId").value = p ? p.id : "";
+  document.getElementById("fName").value = p ? p.name : "";
+  document.getElementById("fCategory").value = p ? p.category : "Women";
+  document.getElementById("fSubcategory").value = p ? p.subcategory : "";
+  document.getElementById("fPrice").value = p ? p.price : "";
+  document.getElementById("fSale").value = p && p.sale ? p.sale : "";
+  document.getElementById("fDesc").value = p ? p.description : "";
+  document.getElementById("fFabric").value = p ? p.fabric : "";
+  document.getElementById("fCare").value = p ? p.care : "";
+  document.getElementById("fImages").value = "";
+  editImages = p ? JSON.parse(JSON.stringify(p.images)) : [];
+  renderImageChips();
+  document.getElementById("fSizes").value = p ? p.sizes.map(s=>`${s.size}:${s.stock}`).join("\n") : "";
+  editColors = p ? JSON.parse(JSON.stringify(p.colors)) : [];
+  renderColorChips();
+}
+function closeForm(){ document.getElementById("formOverlay").style.display = "none"; }
+
+function renderColorChips(){
+  document.getElementById("colorChips").innerHTML = editColors.map((c,i)=>
+    `<span class="chip"><span class="swatch-dot" style="background:${c.hex}"></span>${c.name}<button onclick="removeColorChip(${i})">✕</button></span>`
+  ).join("") || `<span style="font-size:12px;color:var(--muted);">এখনো কোনো রং যোগ হয়নি</span>`;
+}
+function addColorChip(){
+  const hex = document.getElementById("newColorHex").value;
+  const name = document.getElementById("newColorName").value.trim();
+  if(!name) return;
+  editColors.push({name, hex});
+  document.getElementById("newColorName").value = "";
+  renderColorChips();
+}
+function removeColorChip(i){ editColors.splice(i,1); renderColorChips(); }
+
+async function saveProduct(){
+  const id = document.getElementById("fId").value || "p" + Date.now();
+  const name = document.getElementById("fName").value.trim();
+  const price = Number(document.getElementById("fPrice").value);
+  if(!name || !price){ alert("পণ্যের নাম ও দাম আবশ্যক।"); return; }
+  const saleVal = document.getElementById("fSale").value;
+  const urlImages = document.getElementById("fImages").value.split("\n").map(s=>s.trim()).filter(Boolean);
+  const images = [...editImages, ...urlImages];
+  const sizes = document.getElementById("fSizes").value.split("\n").map(s=>s.trim()).filter(Boolean).map(line=>{
+    const [size, stock] = line.split(":").map(x=>x.trim());
+    return { size: size||"One Size", stock: Number(stock)||0 };
+  });
+  const product = {
+    id, name,
+    category: document.getElementById("fCategory").value,
+    subcategory: document.getElementById("fSubcategory").value.trim(),
+    price, sale: saleVal ? Number(saleVal) : null,
+    colors: editColors.length ? editColors : [{name:"Standard", hex:"#14110F"}],
+    sizes: sizes.length ? sizes : [{size:"One Size", stock:0}],
+    images: images.length ? images : ["https://picsum.photos/seed/"+id+"/700/900"],
+    description: document.getElementById("fDesc").value.trim(),
+    fabric: document.getElementById("fFabric").value.trim(),
+    care: document.getElementById("fCare").value.trim(),
+  };
+  try {
+    const res = await apiFetch("/api/products", { method:"POST", body: JSON.stringify(product) });
+    if(!res.ok){
+      const err = await res.json().catch(()=>({}));
+      throw new Error(err.error || "save failed");
+    }
+    const idx = PRODUCTS.findIndex(p=>p.id===id);
+    if(idx>-1) PRODUCTS[idx] = product; else PRODUCTS.push(product);
+    renderTable();
+    showToast("সংরক্ষিত হয়েছে");
+    closeForm();
+  } catch(e) {
+    alert("পণ্যটি সেভ করা যায়নি: " + e.message);
+  }
+}
+
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  clearTimeout(window._tt); window._tt = setTimeout(()=>t.classList.remove("show"), 2200);
+}
+</script>
+</body>
+</html>
