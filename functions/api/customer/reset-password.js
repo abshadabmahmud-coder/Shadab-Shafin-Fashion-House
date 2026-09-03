@@ -1,0 +1,50 @@
+import { jsonResponse, genSalt, hashPassword, normalizePhone } from "../_utils.js";
+
+const SESSION_DAYS = 30;
+
+export async function onRequestPost({ request, env }) {
+  if (!env.DB) {
+    return jsonResponse({ error: "D1 ডাটাবেজ বাইন্ড করা নেই (env.DB)।" }, 500);
+  }
+
+  let body;
+  try {
+    body = await request.json();
+  } catch (e) {
+    return jsonResponse({ error: "invalid_body" }, 400);
+  }
+
+  const phone = normalizePhone(body && body.phone);
+  const password = (body && body.password ? String(body.password) : "");
+
+  if (phone.length !== 11) {
+    return jsonResponse({ error: "সঠিক ১১ ডিজিটের মোবাইল নাম্বার দিন।" }, 400);
+  }
+  if (password.length < 6) {
+    return jsonResponse({ error: "পাসওয়ার্ড কমপক্ষে ৬ ক্যারেক্টার হতে হবে।" }, 400);
+  }
+
+  const customer = await env.DB.prepare("SELECT phone FROM customers WHERE phone = ?").bind(phone).first();
+  if (!customer) {
+    return jsonResponse({ error: "এই নাম্বারে কোনো অ্যাকাউন্ট পাওয়া যায়নি।" }, 404);
+  }
+
+  const salt = genSalt();
+  const passwordHash = await hashPassword(password, salt);
+
+  await env.DB.prepare("UPDATE customers SET password_hash = ?, salt = ? WHERE phone = ?")
+    .bind(passwordHash, salt, phone)
+    .run();
+
+  // পুরনো সব সেশন বাতিল করে দেয়, নিরাপত্তার জন্য
+  await env.DB.prepare("DELETE FROM customer_sessions WHERE phone = ?").bind(phone).run();
+
+  const now = Date.now();
+  const token = crypto.randomUUID() + crypto.randomUUID();
+  const expiresAt = now + SESSION_DAYS * 24 * 60 * 60 * 1000;
+  await env.DB.prepare(
+    "INSERT INTO customer_sessions (token, phone, created_at, expires_at) VALUES (?, ?, ?, ?)"
+  ).bind(token, phone, now, expiresAt).run();
+
+  return jsonResponse({ token, phone, expires_at: expiresAt });
+}
